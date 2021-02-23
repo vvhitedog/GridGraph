@@ -20,16 +20,33 @@ Copyright (c) 2014-2015 Xiaowei Zhu, Tsinghua University
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <type_traits>
+#include <cstring>
 
-template <class ET>
+template <typename ET, typename std::enable_if<sizeof(ET) == 4,int>::type = 0>
 inline bool cas(ET *ptr, ET oldv, ET newv) {
-	if (sizeof(ET) == 8) {
-		return __sync_bool_compare_and_swap((long*)ptr, *((long*)&oldv), *((long*)&newv));
-	} else if (sizeof(ET) == 4) {
-		return __sync_bool_compare_and_swap((int*)ptr, *((int*)&oldv), *((int*)&newv));
-	} else {
-		assert(false);
-	}
+  static_assert(sizeof(int) == 4,"size of int is not 4 bytes on this system");
+  int int_oldv, int_newv;
+  std::memcpy(&int_oldv,&oldv,sizeof(int));
+  std::memcpy(&int_newv,&newv,sizeof(int));
+  auto int_ptr = reinterpret_cast<int*>(ptr);
+  return __sync_bool_compare_and_swap(int_ptr, int_oldv, int_newv);
+}
+
+template <class ET, typename std::enable_if<sizeof(ET) == 8,int>::type = 0>
+inline bool cas(ET *ptr, ET oldv, ET newv) {
+  static_assert(sizeof(long) == 8,"size of long is not 8 bytes on this system");
+  long long_oldv, long_newv;
+  std::memcpy(&long_oldv,&oldv,sizeof(long));
+  std::memcpy(&long_newv,&newv,sizeof(long));
+  auto long_ptr = reinterpret_cast<long*>(ptr);
+  return __sync_bool_compare_and_swap(long_ptr, long_oldv, long_newv);
+}
+
+template <class ET, typename std::enable_if<sizeof(ET) != 8 && sizeof(ET) != 4,int>::type = 0>
+inline bool cas(ET *ptr, ET oldv, ET newv) {
+  static_assert(sizeof(ET) != 8 && sizeof(ET) != 4,"unsupported type in use of CAS");
+  return {};
 }
 
 template <class ET>
