@@ -19,7 +19,7 @@ Copyright (c) 2014-2015 Xiaowei Zhu, Tsinghua University
 
 typedef int VertexId;
 typedef long EdgeId;
-typedef float Weight;
+typedef long Weight;
 
 struct Edge {
 	VertexId source;
